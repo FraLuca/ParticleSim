@@ -23,9 +23,6 @@ DATASETS:
   TRAIN: "train.csv"
   VAL: "val.csv"
   TEST: "test.csv"
-INPUT:
-  SOURCE_INPUT_SIZE_TRAIN: (1280, 720)
-  INPUT_SIZE_TEST: (1280, 640)
 SOLVER:
   EPOCHS: 300
   BATCH_SIZE: 64
