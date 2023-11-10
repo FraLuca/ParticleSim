@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torch.optim import SGD, Adam
+from torch.optim import SGD, AdamW
 
 from core.configs import cfg
 from core.datasets import build_dataset
@@ -68,15 +68,10 @@ class BaseLearner(pl.LightningModule):
             optimizer = SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
                             momentum=self.cfg.SOLVER.MOMENTUM, 
                             weight_decay=self.cfg.SOLVER.WEIGHT_DECAY)
-        elif self.cfg.SOLVER.OPTIMIZER == 'Adam':
-            optimizer = Adam(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
+        elif self.cfg.SOLVER.OPTIMIZER == 'AdamW':
+            optimizer = AdamW(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
                             weight_decay=self.cfg.SOLVER.WEIGHT_DECAY)
 
-        if self.cfg.SOLVER.LR_SCHEDULER == 'poly':
-            scheduler = torch.optim.lr_scheduler.PolynomialLR(
-                optimizer, self.cfg.SOLVER.EPOCHS, 
-                power=self.cfg.SOLVER.LR_POWER
-            )
         elif self.cfg.SOLVER.LR_SCHEDULER == "MultiStepLR":
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer,
