@@ -16,7 +16,7 @@ _C.MODEL.ENCODER.NUM_LAYERS = 6
 _C.MODEL.HEAD = CN()
 _C.MODEL.HEAD.CLASSIFIER = CN()
 _C.MODEL.HEAD.CLASSIFIER.HIDDEN_SIZE = 128
-_C.MODEL.HEAD.CLASSIFIER.OUTPUT_SIZE = 2
+_C.MODEL.HEAD.CLASSIFIER.OUTPUT_SIZE = 1        # the single p probability when using BCELogitsLoss
 _C.MODEL.HEAD.CLASSIFIER.DROPOUT = 0.2
 _C.MODEL.HEAD.REGRESSOR = CN()
 _C.MODEL.HEAD.REGRESSOR.HIDDEN_SIZE = 128
@@ -73,7 +73,7 @@ _C.TEST.BATCH_SIZE = 1
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = ""
+_C.OUTPUT_DIR = "results/source/debug"
 _C.PROTOCOL = "source"
 _C.SEED = -1
 _C.NUM_WORKERS = 8
