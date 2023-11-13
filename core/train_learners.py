@@ -109,7 +109,7 @@ class SourceLearner(pl.LightningModule):
 
         loss_cls = self.class_loss(pred_particle_type, gt_particle_type.squeeze(-1))
         loss_reg = self.regress_loss(pred_energy, gt_energy)
-        loss = 1. * loss_cls + 1. * loss_reg
+        loss = 1. * loss_cls# + 1. * loss_reg
 
         self.log('train_loss', loss.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
         self.log('train_loss_cls', loss_cls.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)

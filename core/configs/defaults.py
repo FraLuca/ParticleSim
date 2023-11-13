@@ -51,7 +51,7 @@ _C.SOLVER.MOMENTUM = 0.9
 
 
 _C.WANDB = CN()
-_C.WANDB.ENABLE = False
+_C.WANDB.ENABLE = True
 _C.WANDB.NAME = 'debug'
 _C.WANDB.GROUP = 'source'
 _C.WANDB.PROJECT = 'uda_particle_simul'
