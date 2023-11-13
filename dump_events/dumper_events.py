@@ -37,9 +37,9 @@ def Load_event_list(file):
 	print(event_id['ev_list'])
 	return np.asarray(event_id['ev_list'])
 
-def EventDump(TRIGBAR, PMT_HG, LYSO, energy, PID):#,theta, phi, x, y, z, TOWEREdep, LysoEdep):
+def EventDump(TRIGBAR, PMT_HG, LYSO, TOTALEdep, energy, PID):#,theta, phi, x, y, z, TOWEREdep, LysoEdep):
 	#event = dict({"TRIGBAR":TRIGBAR,"PMT_HG":PMT_HG,"LYSO":LYSO,"energy":energy,"theta":theta,"phi":phi,"x":x,"y":y,"z":z,"TOWEREdep":TOWEREdep,"LysoEdep":LysoEdep})
-	event = TRIGBAR+PMT_HG+LYSO+list(energy)+list(PID)
+	event = TRIGBAR+PMT_HG+LYSO+list(TOTALEdep)+list(energy)+list(PID)
 	return event
 
 if __name__ == '__main__':
@@ -75,8 +75,9 @@ if __name__ == '__main__':
 		planeSigHG = list(t_SIGtr.planeSigHG)
 		lysoCrystalSig = list(t_SIGtr.lysoCrystalSig)
 		trigHit = list(trig_bool(t_MCtr.TEdep))
-		event_form.append(EventDump(trigHit,planeSigHG,lysoCrystalSig,[t_MCtr.energy],[0]))#,t_MCtr.theta,t_MCtr.phi,t_MCtr.gen[0],t_MCtr.gen[1],t_MCtr.gen[2],t_MCtr.TRIGEdep,t_MCtr.TOWEREdep,SumLysoEne(t_MCtr.LEdep)))
+		event_form.append(EventDump(trigHit,planeSigHG,lysoCrystalSig,[t_MCtr.TOTALEdep],[t_MCtr.energy],[0]))#,t_MCtr.theta,t_MCtr.phi,t_MCtr.gen[0],t_MCtr.gen[1],t_MCtr.gen[2],t_MCtr.TRIGEdep,t_MCtr.TOWEREdep,SumLysoEne(t_MCtr.LEdep)))
 	print(sel_eve)
+
 	t_MCtr = root_file2.Get("L2MCtr")
 	t_SIGtr = root_file2.Get("L2")
 	
@@ -96,7 +97,7 @@ if __name__ == '__main__':
 		planeSigHG = list(t_SIGtr.planeSigHG)
 		lysoCrystalSig = list(t_SIGtr.lysoCrystalSig)
 		trigHit = list(trig_bool(t_MCtr.TEdep))
-		event_form.append(EventDump(trigHit,planeSigHG,lysoCrystalSig,[t_MCtr.energy],[1]))#,t_MCtr.theta,t_MCtr.phi,t_MCtr.gen[0],t_MCtr.gen[1],t_MCtr.gen[2],t_MCtr.TRIGEdep,t_MCtr.TOWEREdep,SumLysoEne(t_MCtr.LEdep)))
+		event_form.append(EventDump(trigHit,planeSigHG,lysoCrystalSig,[t_MCtr.TOTALEdep],[t_MCtr.energy],[1]))#,t_MCtr.theta,t_MCtr.phi,t_MCtr.gen[0],t_MCtr.gen[1],t_MCtr.gen[2],t_MCtr.TRIGEdep,t_MCtr.TOWEREdep,SumLysoEne(t_MCtr.LEdep)))
 	print(sel_eve)
 
 	df = pd.DataFrame(event_form)
