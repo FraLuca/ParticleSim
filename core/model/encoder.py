@@ -16,7 +16,10 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(cfg.MODEL.ENCODER.INPUT_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
         self.fc2 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc3 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.OUTPUT_SIZE)
+        self.fc3 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
+        self.fc4 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
+        self.fc5 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
+        self.fc6 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.OUTPUT_SIZE)
         self.dropout = nn.Dropout(cfg.MODEL.ENCODER.DROPOUT)
         self.activation = nn.ReLU()
     
@@ -25,7 +28,13 @@ class MLP(nn.Module):
         x = self.dropout(x)
         x = self.activation(self.fc2(x))
         x = self.dropout(x)
-        x = self.fc3(x)
+        x = self.activation(self.fc3(x))
+        x = self.dropout(x)
+        x = self.activation(self.fc4(x))
+        x = self.dropout(x)
+        x = self.activation(self.fc5(x))
+        x = self.dropout(x)
+        x = self.fc6(x)
         return x
 
 class TransformerEncoder(nn.Module):

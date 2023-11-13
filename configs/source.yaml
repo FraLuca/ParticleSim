@@ -5,40 +5,41 @@ MODEL:
     OUTPUT_SIZE: 512
     DROPOUT: 0.2
     # For MLP
-    # HIDDEN_SIZE: 512
-    # For Transformer
-    NHEAD: 8
     HIDDEN_SIZE: 512
-    NUM_LAYERS: 6
+    # For Transformer
+    # NHEAD: 8
+    # HIDDEN_SIZE: 512
+    # NUM_LAYERS: 6
   HEAD:
     CLASSIFIER:
       HIDDEN_SIZE: 128
-      OUTPUT_SIZE: 3
+      OUTPUT_SIZE: 2          # 0: elettrone, 1: protone
       DROPOUT: 0.2
     REGRESSOR:
       HIDDEN_SIZE: 128
       OUTPUT_SIZE: 1
       DROPOUT: 0.2
 DATASETS:
-  TRAIN: "train.csv"
-  VAL: "validation.csv"
-  TEST: "test.csv"
+  TRAIN: "data/dataset_train.csv"
+  VAL: "data/dataset_validation.csv"
+  TEST: "data/dataset_test.csv"
 SOLVER:
   EPOCHS: 300
   BATCH_SIZE: 64
   BASE_LR: 1.5e-4
   WEIGHT_DECAY: 0.001
-  GPUS: [4,5,6,7]
+  GPUS: [0]
   OPTIMIZER: 'AdamW'        # SGD | AdamW
-  LR_SCHEDULER: 'CosineAnnealingLR'     # MultiStepLR | CosineAnnealingLR | WarmupCosineLR
-  MILESTONES: [200]         # MultiStepLR
+  LR_SCHEDULER: 'MultiStepLR'     # MultiStepLR | CosineAnnealingLR | WarmupCosineLR
+  MILESTONES: [100]         # MultiStepLR
   GAMMA: 0.1                # MultiStepLR
   MIN_LR: 1e-6              # CosineAnnealingLR
 WANDB:
-  ENABLE: True
+  ENABLE: False
   NAME: 'debug'
   GROUP: 'source'
   PROJECT: 'uda_particle_simul'
-  ENTITY: 'pinlab-sapienza'
+  ENTITY: 'particlesim'
 OUTPUT_DIR: 'results/source/debug'
 PROTOCOL: 'source'
+SEED: -1

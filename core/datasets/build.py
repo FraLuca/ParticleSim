@@ -1,28 +1,31 @@
-from . import transform
+# from . import transform
 # from .dataset_path_catalog import DatasetCatalog
+from torchvision import transforms
+from torch.utils.data import Dataset
 import pandas as pd
+# import torch functional
+import torch.nn.functional as F
 
 
 def build_transform(cfg, mode):
     if mode == "train":
         # TODO: add augmentations eventually
-        trans = transform.Compose([
-            transform.ToTensor(),
-            transform.Normalize(mean=cfg.INPUT.DATA_MEAN, std=cfg.INPUT.DATA_STD)
+        trans = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.INPUT.DATA_MEAN, std=cfg.INPUT.DATA_STD)
         ])
     else:
-        trans = transform.Compose([
-            transform.ToTensor(),
-            transform.Normalize(mean=cfg.INPUT.DATA_MEAN, std=cfg.INPUT.DATA_STD)
+        trans = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.INPUT.DATA_MEAN, std=cfg.INPUT.DATA_STD)
         ])
     return trans
 
 
 def build_dataset(cfg, mode='train'):
     assert mode in ['train', 'val', 'test']
-    # transform = build_transform(cfg, mode)
+    transform = build_transform(cfg, mode)
     # print(transform)
-    transform = None
 
     if mode == 'train':
         dataset = CustomDataSet(csv_path=cfg.DATASETS.TRAIN, transform=transform)
@@ -45,12 +48,11 @@ class CustomDataSet(Dataset):
 
     def __getitem__(self, index):
         signal = self.df[index, 0:47]
-        energy = self.df[index, 47]
-        particle_type = self.df[index, 48]
+        energy = self.df[index, 47].reshape(1)
+        particle_type = self.df[index, 48].reshape(1)
   
         if self.transform:
             # TODO 1: decide augmentations
-            # TODO 2: normalize data per channel? 
-            signal = self.transform(signal)
+            signal = self.transform(signal.reshape(1,1,-1)).squeeze(-1).squeeze(-1)
 
         return signal, energy, particle_type

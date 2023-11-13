@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from core.utils.misc import parse_args
 from core.configs import cfg
-from core.train_learners import SourceLearner, SourceTargetLearner
+from core.train_learners import SourceLearner #, SourceTargetLearner
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers.wandb import WandbLogger
 import pytorch_lightning as pl
@@ -12,10 +12,10 @@ import lightning as L
 warnings.filterwarnings('ignore')
 
 
-protocol_types = {
-    'source': SourceLearner,
-    'source_target': SourceTargetLearner
-}
+# protocol_types = {
+#     'source': SourceLearner #,
+#     # 'source_target': SourceTargetLearner
+# }
 
 
 def main(cfg):
@@ -28,16 +28,15 @@ def main(cfg):
                                    config=cfg, save_dir='.')
 
     # init learner
-    if cfg.PROTOCOL in protocol_types:
-        print(f'\n\n>>>>>>>>>>>>>> PROTOCOL: {cfg.PROTOCOL} <<<<<<<<<<<<<<\n\n')
-        learner = protocol_types[cfg.PROTOCOL](cfg)
+    if cfg.PROTOCOL == 'source':
+        learner = SourceLearner(cfg)
     else:
         raise NotImplementedError(f'Protocol {cfg.PROTOCOL} is not implemented.')
 
     checkcall_1 = ModelCheckpoint(
         save_top_k=1,
         monitor="val_energy_error",  # TODO: change with metric for energy regression or particle classification
-        mode="max",
+        mode="min",
         dirpath=cfg.OUTPUT_DIR,
         filename="model_{global_step}_{val_energy_error:.2f}",  # TODO: change consistently
     )
@@ -64,8 +63,10 @@ def main(cfg):
 
 
 
+
+
 if __name__ == '__main__':
-    cfg = parse_args()
+    # cfg = parse_args()
 
     SEED = cfg.SEED
     if cfg.SEED == -1:
@@ -73,12 +74,10 @@ if __name__ == '__main__':
     L.seed_everything(SEED)
 
     try:
-        outdir = cfg.SAVE.OUTPUT_DIR
+        outdir = cfg.OUTPUT_DIR
         print(f"Creating directory {outdir}...")
         Path(outdir).mkdir(parents=True)
     except FileExistsError:
         print(f"Directory {outdir} already exists")
-
-
 
     main(cfg)

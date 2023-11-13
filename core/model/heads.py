@@ -10,9 +10,9 @@ def build_regressor(cfg):
 class MLP_CLS(nn.Module):
     def __init__(self, cfg):
         super(MLP_CLS, self).__init__()
-        self.fc1 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.CLASSIFIER.HIDDEN_SIZE)
-        self.fc3 = nn.Linear(cfg.MODEL.CLASSIFIER.HIDDEN_SIZE, cfg.MODEL.CLASSIFIER.OUTPUT_SIZE)
-        self.dropout = nn.Dropout(cfg.MODEL.CLASSIFIER.DROPOUT)
+        self.fc1 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.HEAD.CLASSIFIER.HIDDEN_SIZE)
+        self.fc2 = nn.Linear(cfg.MODEL.HEAD.CLASSIFIER.HIDDEN_SIZE, cfg.MODEL.HEAD.CLASSIFIER.OUTPUT_SIZE)
+        self.dropout = nn.Dropout(cfg.MODEL.HEAD.CLASSIFIER.DROPOUT)
         self.activation = nn.ReLU()
     
     def forward(self, x):
@@ -25,9 +25,9 @@ class MLP_CLS(nn.Module):
 class MLP_REG(nn.Module):
     def __init__(self, cfg):
         super(MLP_REG, self).__init__()
-        self.fc1 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.REGRESSOR.HIDDEN_SIZE)
-        self.fc3 = nn.Linear(cfg.MODEL.REGRESSOR.HIDDEN_SIZE, cfg.MODEL.REGRESSOR.OUTPUT_SIZE)
-        self.dropout = nn.Dropout(cfg.MODEL.REGRESSOR.DROPOUT)
+        self.fc1 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.HEAD.REGRESSOR.HIDDEN_SIZE)
+        self.fc2 = nn.Linear(cfg.MODEL.HEAD.REGRESSOR.HIDDEN_SIZE, cfg.MODEL.HEAD.REGRESSOR.OUTPUT_SIZE)
+        self.dropout = nn.Dropout(cfg.MODEL.HEAD.REGRESSOR.DROPOUT)
         self.activation = nn.ReLU()
     
     def forward(self, x):
