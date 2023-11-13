@@ -8,6 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers.wandb import WandbLogger
 import pytorch_lightning as pl
 import lightning as L
+import torch
 
 warnings.filterwarnings('ignore')
 
@@ -41,18 +42,30 @@ def main(cfg):
         filename="model_{global_step}_{val_energy_error:.2f}",  # TODO: change consistently
     )
     
-    # init trainer
-    trainer = pl.Trainer(
-        max_epochs=cfg.SOLVER.EPOCHS,
-        accelerator='gpu',
-        devices=cfg.SOLVER.GPUS,
-        strategy="ddp",  # "ddp_find_unused_parameters_true",
-        logger=wandb_logger,
-        callbacks=[checkcall_1],
-        num_sanity_val_steps=2,
-        sync_batchnorm=True,
-        log_every_n_steps=50,
-        precision=32)
+    #init trainer
+    if torch.cuda.is_available():
+        trainer = pl.Trainer(
+            max_epochs=cfg.SOLVER.EPOCHS,
+            accelerator='gpu',
+            devices=cfg.SOLVER.GPUS,
+            strategy="ddp",  # "ddp_find_unused_parameters_true",
+            logger=wandb_logger,
+            callbacks=[checkcall_1],
+            num_sanity_val_steps=2,
+            sync_batchnorm=True,
+            log_every_n_steps=50,
+            precision=32)
+    else:
+        trainer = pl.Trainer(
+            max_epochs=cfg.SOLVER.EPOCHS,
+            accelerator='cpu',
+            strategy="ddp",  # "ddp_find_unused_parameters_true",
+            logger=wandb_logger,
+            callbacks=[checkcall_1],
+            num_sanity_val_steps=2,
+            sync_batchnorm=True,
+            log_every_n_steps=50,
+            precision=32)
 
     # start training
     if cfg.checkpoint:
