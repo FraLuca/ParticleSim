@@ -93,7 +93,8 @@ class SourceLearner(pl.LightningModule):
         self.regressor = build_regressor(cfg)
 
         # create criterion
-        self.class_loss = nn.CrossEntropyLoss()
+        # self.class_loss = nn.CrossEntropyLoss()
+        self.class_loss = nn.BCEWithLogitsLoss()
         self.regress_loss = nn.MSELoss()
 
     def forward(self, input_data):
@@ -105,15 +106,16 @@ class SourceLearner(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].long()   # shapes [B, 53], [B, 1], [B, 1]
-        pred_energy, pred_particle_type = self.forward(signal)
+        energy_pred, part_pred_logits = self.forward(signal)
 
         loss_cls = self.class_loss(pred_particle_type, gt_particle_type.squeeze(-1))
         loss_reg = self.regress_loss(pred_energy, gt_energy)
-        loss = 1. * loss_cls# + 1. * loss_reg
+        loss = 1. * loss_cls + 1. * loss_reg
 
         self.log('train_loss', loss.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
-        self.log('train_loss_cls', loss_cls.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
-        self.log('train_loss_reg', loss_reg.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+        self.log('train_loss_cls', loss_cls.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
+        self.log('train_loss_reg', loss_reg.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
+        self.log('train_accuracy', train_accuracy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
 
         return loss
 
@@ -129,13 +131,14 @@ class SourceLearner(pl.LightningModule):
         signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].float()   # shapes [B, 47], [B, 1], [B, 1]
         energy_pred, part_pred_logits = self.inference(signal)
     
-        part_pred_class = part_pred_logits.argmax(dim=-1)
+        # part_pred_class = part_pred_logits.argmax(dim=-1)
 
-        val_particle_acc = (part_pred_class == gt_particle_type).float().mean()
+        # val_particle_acc = (part_pred_class == gt_particle_type).float().mean()
+        val_particle_acc = ((part_pred_logits > 0.5) == gt_particle_type.squeeze(-1)).float().mean()
         self.log('val_particle_acc', val_particle_acc.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
 
         error_energy = torch.abs(energy_pred - gt_energy).mean()
-        self.log('val_energy_error', error_energy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+        self.log('val_energy_error', error_energy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
 
     def train_dataloader(self):
         train_set = build_dataset(self.cfg, mode='train')
