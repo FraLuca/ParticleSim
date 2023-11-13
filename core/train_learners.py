@@ -108,13 +108,9 @@ class SourceLearner(pl.LightningModule):
         signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].long()   # shapes [B, 53], [B, 1], [B, 1]
         energy_pred, part_pred_logits = self.forward(signal)
 
-        # loss_cls = self.class_loss(pred_particle_type, gt_particle_type.squeeze(-1))
-        loss_cls = self.class_loss(part_pred_logits, gt_particle_type.squeeze(-1))
-        loss_reg = self.regress_loss(energy_pred, gt_energy)
+        loss_cls = self.class_loss(pred_particle_type, gt_particle_type.squeeze(-1))
+        loss_reg = self.regress_loss(pred_energy, gt_energy)
         loss = 1. * loss_cls + 1. * loss_reg
-
-        # train_accuracy = (part_pred_logits.argmax(dim=-1) == gt_particle_type.squeeze(-1)).float().mean()
-        train_accuracy = ((part_pred_logits > 0.5) == gt_particle_type.squeeze(-1)).float().mean()
 
         self.log('train_loss', loss.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
         self.log('train_loss_cls', loss_cls.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
