@@ -18,32 +18,39 @@ def mkdir(path):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Unsupervised Particle Simulator Domain Adaptation")
-    parser.add_argument("-cfg",
-                        "--config-file",
-                        default="",
-                        metavar="FILE",
-                        help="path to config file",
-                        type=str)
-    # parser.add_argument(
-    #     "opts",
-    #     help="Modify config options using the command-line",
-    #     default=None,
-    #     nargs=argparse.REMAINDER
-    # )
+    parser = argparse.ArgumentParser(description="ParticleSim")
+    parser.add_argument(
+        "-cfg",
+        "--config-file",
+        default="",
+        metavar="FILE",
+        help="path to config file",
+        type=str,
+    )
+    parser.add_argument(
+        "--proctitle",
+        type=str,
+        default="ParticleSim",
+        help="allow a process to change its title",
+    )
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
 
     args = parser.parse_args()
 
-    # if args.opts is not None and args.opts != []:
-    #     args.opts[-1] = args.opts[-1].strip('\r\n')
+    if args.opts is not None and args.opts != []:
+        args.opts[-1] = args.opts[-1].strip("\r\n")
 
     cfg.set_new_allowed(True)
     cfg.merge_from_file(args.config_file)
-    # cfg.merge_from_list(args.opts)
+    cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    return args
-
+    return cfg
 
 
 
