@@ -11,6 +11,13 @@ def build_encoder(cfg):
         raise NotImplementedError('Only MLP encoder is implemented')
     
 
+
+def load_encoder(cfg):
+    encoder = build_encoder(cfg)
+    encoder.load_state_dict(torch.load(cfg.ENCODER_PATH)['state_dict'])
+    return encoder
+    
+
 class MLP(nn.Module):
     def __init__(self, cfg):
         super(MLP, self).__init__()

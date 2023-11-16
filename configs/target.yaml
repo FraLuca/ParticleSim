@@ -4,25 +4,12 @@ MODEL:
     INPUT_SIZE: 47
     OUTPUT_SIZE: 512
     DROPOUT: 0.2
-    # For MLP
     HIDDEN_SIZE: 512
-    # For Transformer
-    # NHEAD: 8
-    # HIDDEN_SIZE: 512
-    # NUM_LAYERS: 6
-  HEAD:
-    CLASSIFIER:
-      HIDDEN_SIZE: 128
-      OUTPUT_SIZE: 2          # 0: elettrone, 1: protone
-      DROPOUT: 0.2
-    REGRESSOR:
-      HIDDEN_SIZE: 128
-      OUTPUT_SIZE: 1
-      DROPOUT: 0.2
+  GENERATOR:
+    INPUT_SIZE: 47
+    OUTPUT_SIZE: 47
 DATASETS:
-  TRAIN: "data/source/dataset_train.csv"
-  VAL: "data/source/dataset_validation.csv"
-  TEST: "data/source/dataset_test.csv"
+  TRAIN: "data/target/dataset_train.csv"
 SOLVER:
   EPOCHS: 300
   BATCH_SIZE: 64
@@ -37,9 +24,10 @@ SOLVER:
 WANDB:
   ENABLE: False
   NAME: 'debug'
-  GROUP: 'source'
+  GROUP: 'target'
   PROJECT: 'uda_particle_simul'
   ENTITY: 'particlesim'
-OUTPUT_DIR: 'results/source/debug'
-PROTOCOL: 'source'
+ENCODER_PATH: 'results/source/debug/encoder.pth'
+OUTPUT_DIR: 'results/target/debug'
+PROTOCOL: 'target'
 SEED: -1
