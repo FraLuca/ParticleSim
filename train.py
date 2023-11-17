@@ -8,6 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers.wandb import WandbLogger
 import pytorch_lightning as pl
 import lightning as L
+from pytorch_lightning.strategies.ddp import DDPStrategy
 import torch
 
 warnings.filterwarnings('ignore')
@@ -39,10 +40,10 @@ def main(cfg):
     if cfg.PROTOCOL == 'source':
         checkcall = ModelCheckpoint(
             save_top_k=1,
-            monitor="val_energy_error",  
-            mode="min",
+            monitor="val_particle_acc",  
+            mode="max",
             dirpath=cfg.OUTPUT_DIR,
-            filename="model_{global_step}_{val_energy_error:.2f}",
+            filename="model_{global_step}_{val_particle_acc:.2f}",
         )
     elif cfg.PROTOCOL == 'target':
         checkcall = ModelCheckpoint(
@@ -59,7 +60,7 @@ def main(cfg):
             max_epochs=cfg.SOLVER.EPOCHS,
             accelerator='gpu',
             devices=cfg.SOLVER.GPUS,
-            strategy="ddp",  # "ddp_find_unused_parameters_true",
+            strategy=DDPStrategy(find_unused_parameters=False),  # "ddp_find_unused_parameters_true",
             logger=wandb_logger,
             callbacks=[checkcall],
             num_sanity_val_steps=2,
@@ -70,9 +71,9 @@ def main(cfg):
         trainer = pl.Trainer(
             max_epochs=cfg.SOLVER.EPOCHS,
             accelerator='cpu',
-            strategy="ddp",  # "ddp_find_unused_parameters_true",
+            strategy=DDPStrategy(find_unused_parameters=False),  # "ddp_find_unused_parameters_true",
             logger=wandb_logger,
-            callbacks=[checkcall_1],
+            callbacks=[checkcall],
             num_sanity_val_steps=2,
             sync_batchnorm=True,
             log_every_n_steps=50,
@@ -90,7 +91,7 @@ def main(cfg):
 
 
 if __name__ == '__main__':
-    # cfg = parse_args()
+    cfg = parse_args()
 
     SEED = cfg.SEED
     if cfg.SEED == -1:
