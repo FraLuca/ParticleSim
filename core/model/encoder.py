@@ -14,28 +14,25 @@ def build_encoder(cfg):
 class MLP(nn.Module):
     def __init__(self, cfg):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(cfg.MODEL.ENCODER.INPUT_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc2 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc3 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc4 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc5 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.fc6 = nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.OUTPUT_SIZE)
-        self.dropout = nn.Dropout(cfg.MODEL.ENCODER.DROPOUT)
-        self.activation = nn.ReLU()
-    
+
+        layer_list = []
+
+        for i in range(cfg.MODEL.ENCODER.NUM_LAYERS):
+            if i == 0:
+                layer_list.append(nn.Linear(cfg.MODEL.ENCODER.INPUT_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE))
+            elif i == (cfg.MODEL.ENCODER.NUM_LAYERS - 1):
+                layer_list.append(nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.OUTPUT_SIZE))
+            else:
+                layer_list.append(nn.Linear(cfg.MODEL.ENCODER.HIDDEN_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE))
+            
+            layer_list.append(nn.ReLU())
+            layer_list.append(nn.Dropout(cfg.MODEL.ENCODER.DROPOUT))
+
+        self.layers = nn.Sequential(*layer_list)
+
     def forward(self, x):
-        x = self.activation(self.fc1(x))
-        x = self.dropout(x)
-        x = self.activation(self.fc2(x))
-        x = self.dropout(x)
-        x = self.activation(self.fc3(x))
-        x = self.dropout(x)
-        x = self.activation(self.fc4(x))
-        x = self.dropout(x)
-        x = self.activation(self.fc5(x))
-        x = self.dropout(x)
-        x = self.fc6(x)
-        return x
+        return self.layers(x)
+    
 
 class TransformerEncoder(nn.Module):
     '''
@@ -44,18 +41,19 @@ class TransformerEncoder(nn.Module):
     '''
     def __init__(self, cfg):
         super(TransformerEncoder, self).__init__()
-        self.encoder_layer = nn.TransformerEncoderLayer(d_model=cfg.MODEL.ENCODER.HIDDEN_SIZE, nhead=cfg.MODEL.ENCODER.NHEAD)
-        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=cfg.MODEL.ENCODER.NUM_LAYERS)
-        self.fc = nn.Linear(cfg.MODEL.ENCODER.INPUT_SIZE, cfg.MODEL.ENCODER.OUTPUT_SIZE)
+        TF_EMBED_SIZE = 32
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model=TF_EMBED_SIZE, nhead=4)
+        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=2)
+        self.output_layer = nn.Linear(TF_EMBED_SIZE, 1)
         self.dropout = nn.Dropout(cfg.MODEL.ENCODER.DROPOUT)
         self.activation = nn.ReLU()
 
-        self.input_layer = nn.Linear(cfg.MODEL.ENCODER.INPUT_SIZE, cfg.MODEL.ENCODER.HIDDEN_SIZE)
-        self.pos_embed_layer = nn.Linear(3, cfg.MODEL.ENCODER.HIDDEN_SIZE)
+        self.input_layer = nn.Linear(1, TF_EMBED_SIZE)
+        self.pos_embed_layer = nn.Linear(3, TF_EMBED_SIZE)
         
-        self.cls_token = nn.Parameter(torch.randn(1, 1, cfg.MODEL.ENCODER.HIDDEN_SIZE))
+        self.cls_token = nn.Parameter(torch.randn(1, 1, TF_EMBED_SIZE))
         # TODO: try with a learnable pos embedding
-        self.pos_embedding = torch.Tensor([[0,3,0.5],[0,3,1.5],[0,3,2.5],[0,3,3.5],[0,3,4.5],[0,3,5.5],
+        self.pos_embedding = nn.Parameter(torch.Tensor([[0,3,0.5],[0,3,1.5],[0,3,2.5],[0,3,3.5],[0,3,4.5],[0,3,5.5],
                                            [1,0,0],[1,6,6],[2,0,6],[2,6,0],
                                            [3,0,0],[3,6,6],[4,0,6],[4,6,0],
                                            [5,0,0],[5,6,6],[6,0,6],[6,6,0],
@@ -65,7 +63,9 @@ class TransformerEncoder(nn.Module):
                                            [13,0,0],[13,6,6],[14,0,6],[14,6,0],
                                            [15,0,0],[15,6,6],[16,0,6],[16,6,0],
                                            [17,0.5,0.5], [17,3,0.5], [17,5.5,0.5], [17,0.5,3], [17,3,3], [17,5.5,3], [17,0.5,5.5], [17,3,5.5], [17,5.5,5.5]
-                                           ]).unsqueeze(0)
+                                           ]), requires_grad=False)
+
+        self.mlp_output = MLP(cfg)
     
     def forward(self, x):
         B, S = x.shape
@@ -81,8 +81,11 @@ class TransformerEncoder(nn.Module):
         x = self.transformer_encoder(x)
 
         # can be removed?
-        x = self.activation(self.fc(x[:,0,:]))
-        x = self.dropout(x)
-        # if removed we return the CLS token x = x[:,0,:]
+        out = self.activation(self.output_layer(x[:,1:,:]))
+        out = self.dropout(out)
 
-        return x
+        out = self.mlp_output(out.squeeze(-1))
+        # if removed we return the CLS token x = x[:,0,:]
+        # out = x[:,0,:]
+
+        return out

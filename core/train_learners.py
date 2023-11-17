@@ -14,71 +14,7 @@ from core.model.heads import build_classifier, build_regressor
 
 
 
-# class BaseLearner(pl.LightningModule):
-#     def __init__(self, cfg):
-#         super().__init__()
-#         self.cfg = cfg
 
-#         # create network
-#         self.encoder = build_encoder(cfg)
-#         self.classifier = build_classifier(cfg)
-#         self.regressor = build_regressor(cfg)
-
-#         # create criterion
-#         self.class_loss = nn.CrossEntropyLoss()
-#         self.regress_loss = nn.MSELoss()
-
-#     def forward(self, input_data):
-#         embedding = self.encoder(input_data)
-#         part_pred = self.classifier(embedding)
-#         energy_pred = self.regressor(embedding)
-#         return energy_pred, part_pred
-
-#     def inference(self, input_data):
-#         embedding = self.encoder(input_data)
-#         part_pred = self.classifier(embedding)
-#         energy_pred = self.regressor(embedding)
-#         part_pred_logits = F.softmax(part_pred, dim=-1)
-#         return energy_pred, part_pred_logits
-
-#     def validation_step(self, batch, batch_idx):
-
-#         signal, gt_energy, gt_particle_type = batch[0], batch[1], batch[2]   # shapes [B, 47], [B, 1], [B, 1]
-#         energy_pred, part_pred_logits = self.inference(signal)
-        
-#         part_pred_class = part_pred_logits.argmax(dim=-1)
-
-#         val_particle_acc = (part_pred_class == gt_particle_type).float().mean()
-#         self.log('val_particle_acc', val_particle_acc.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
-
-#         error_energy = torch.abs(energy_pred - gt_energy).mean()
-#         self.log('val_energy_error', error_energy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
-
-
-#     def configure_optimizers(self):
-#         if self.cfg.SOLVER.OPTIMIZER == 'SGD':
-#             optimizer = SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
-#                             momentum=self.cfg.SOLVER.MOMENTUM, 
-#                             weight_decay=self.cfg.SOLVER.WEIGHT_DECAY)
-#         elif self.cfg.SOLVER.OPTIMIZER == 'AdamW':
-#             optimizer = AdamW(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
-#                             weight_decay=self.cfg.SOLVER.WEIGHT_DECAY)
-
-#         if self.cfg.SOLVER.LR_SCHEDULER == "MultiStepLR":
-#             scheduler = torch.optim.lr_scheduler.MultiStepLR(
-#                 optimizer,
-#                 milestones=self.cfg.SOLVER.MILESTONES,
-#                 gamma=self.cfg.SOLVER.GAMMA,
-#             )
-#         elif self.cfg.SOLVER.LR_SCHEDULER == "CosineAnnealingLR":
-#             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-#                 optimizer, T_max=self.cfg.SOLVER.EPOCHS, 
-#                 eta_min=self.cfg.SOLVER.MIN_LR
-#             )
-#         else:
-#             scheduler = None
-
-#         return [optimizer], [scheduler]
     
 
 class SourceLearner(pl.LightningModule):
@@ -93,8 +29,7 @@ class SourceLearner(pl.LightningModule):
         self.regressor = build_regressor(cfg)
 
         # create criterion
-        # self.class_loss = nn.CrossEntropyLoss()
-        self.class_loss = nn.BCEWithLogitsLoss()
+        self.class_loss = nn.BCELoss()
         self.regress_loss = nn.MSELoss()
 
     def forward(self, input_data):
@@ -105,17 +40,21 @@ class SourceLearner(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].long()   # shapes [B, 53], [B, 1], [B, 1]
-        energy_pred, part_pred_logits = self.forward(signal)
+        signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].float()   # shapes [B, 53], [B, 1], [B, 1]
+        energy_pred, part_pred = self.forward(signal)
 
-        loss_cls = self.class_loss(pred_particle_type, gt_particle_type.squeeze(-1))
-        loss_reg = self.regress_loss(pred_energy, gt_energy)
+        # for BCELOSS
+        loss_cls = self.class_loss(part_pred, gt_particle_type)
+        loss_reg = self.regress_loss(energy_pred, gt_energy)
         loss = 1. * loss_cls + 1. * loss_reg
+
+        class_pred = part_pred > 0.5
+        train_accuracy = (class_pred == gt_particle_type).float().mean()
 
         self.log('train_loss', loss.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
         self.log('train_loss_cls', loss_cls.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
         self.log('train_loss_reg', loss_reg.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
-        self.log('train_accuracy', train_accuracy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
+        self.log('train_accuracy', train_accuracy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
 
         return loss
 
@@ -123,22 +62,22 @@ class SourceLearner(pl.LightningModule):
         embedding = self.encoder(input_data)
         part_pred = self.classifier(embedding)
         energy_pred = self.regressor(embedding)
-        part_pred_logits = F.softmax(part_pred, dim=-1)
-        return energy_pred, part_pred_logits
+        return energy_pred, part_pred
 
     def validation_step(self, batch, batch_idx):
 
         signal, gt_energy, gt_particle_type = batch[0].float(), batch[1].float(), batch[2].float()   # shapes [B, 47], [B, 1], [B, 1]
-        energy_pred, part_pred_logits = self.inference(signal)
+        energy_pred, part_pred = self.inference(signal)
     
-        # part_pred_class = part_pred_logits.argmax(dim=-1)
-
-        # val_particle_acc = (part_pred_class == gt_particle_type).float().mean()
-        val_particle_acc = ((part_pred_logits > 0.5) == gt_particle_type.squeeze(-1)).float().mean()
+        class_pred = part_pred > 0.5
+        val_particle_acc = (class_pred == gt_particle_type).float().mean()
+        
         self.log('val_particle_acc', val_particle_acc.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
 
         error_energy = torch.abs(energy_pred - gt_energy).mean()
-        self.log('val_energy_error', error_energy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=False)
+        self.log('val_energy_error', error_energy.item(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+
+
 
     def train_dataloader(self):
         train_set = build_dataset(self.cfg, mode='train')
@@ -175,6 +114,12 @@ class SourceLearner(pl.LightningModule):
             optimizer = AdamW(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, 
                             weight_decay=self.cfg.SOLVER.WEIGHT_DECAY)
 
+        if self.cfg.SOLVER.LR_SCHEDULER == "StepLR":
+            scheduler = torch.optim.lr_scheduler.StepLR(
+                optimizer,
+                step_size=1,
+                gamma=self.cfg.SOLVER.GAMMA,
+            )
         if self.cfg.SOLVER.LR_SCHEDULER == "MultiStepLR":
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer,
