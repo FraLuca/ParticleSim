@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from core.utils.misc import parse_args
 from core.configs import cfg
-from core.train_learners import SourceLearner #, SourceTargetLearner
+from core.learners.train_learners import SourceLearner, TargetLearner
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers.wandb import WandbLogger
 import pytorch_lightning as pl
@@ -31,16 +31,27 @@ def main(cfg):
     # init learner
     if cfg.PROTOCOL == 'source':
         learner = SourceLearner(cfg)
+    elif cfg.PROTOCOL == 'target':
+        learner = TargetLearner(cfg)
     else:
         raise NotImplementedError(f'Protocol {cfg.PROTOCOL} is not implemented.')
 
-    checkcall_1 = ModelCheckpoint(
-        save_top_k=1,
-        monitor="val_energy_error",  # TODO: change with metric for energy regression or particle classification
-        mode="min",
-        dirpath=cfg.OUTPUT_DIR,
-        filename="model_{global_step}_{val_energy_error:.2f}",  # TODO: change consistently
-    )
+    if cfg.PROTOCOL == 'source':
+        checkcall = ModelCheckpoint(
+            save_top_k=1,
+            monitor="val_energy_error",  
+            mode="min",
+            dirpath=cfg.OUTPUT_DIR,
+            filename="model_{global_step}_{val_energy_error:.2f}",
+        )
+    elif cfg.PROTOCOL == 'target':
+        checkcall = ModelCheckpoint(
+            save_top_k=1,
+            monitor="d_loss",  
+            mode="max",
+            dirpath=cfg.OUTPUT_DIR,
+            filename="model_{global_step}_{d_loss:.2f}",
+        )
     
     #init trainer
     if torch.cuda.is_available():
@@ -50,7 +61,7 @@ def main(cfg):
             devices=cfg.SOLVER.GPUS,
             strategy="ddp",  # "ddp_find_unused_parameters_true",
             logger=wandb_logger,
-            callbacks=[checkcall_1],
+            callbacks=[checkcall],
             num_sanity_val_steps=2,
             sync_batchnorm=True,
             log_every_n_steps=50,

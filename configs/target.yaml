@@ -1,0 +1,33 @@
+MODEL:
+  ENCODER:
+    NAME: 'mlp'                #  'mlp' | 'tf'
+    INPUT_SIZE: 47
+    OUTPUT_SIZE: 512
+    DROPOUT: 0.2
+    HIDDEN_SIZE: 512
+  GENERATOR:
+    INPUT_SIZE: 47
+    OUTPUT_SIZE: 47
+DATASETS:
+  TRAIN: "data/target/dataset_train.csv"
+SOLVER:
+  EPOCHS: 300
+  BATCH_SIZE: 64
+  BASE_LR: 1.5e-4
+  WEIGHT_DECAY: 0.001
+  GPUS: [0]
+  OPTIMIZER: 'AdamW'        # SGD | AdamW
+  LR_SCHEDULER: 'MultiStepLR'     # MultiStepLR | CosineAnnealingLR | WarmupCosineLR
+  MILESTONES: [100]         # MultiStepLR
+  GAMMA: 0.1                # MultiStepLR
+  MIN_LR: 1e-6              # CosineAnnealingLR
+WANDB:
+  ENABLE: False
+  NAME: 'debug'
+  GROUP: 'target'
+  PROJECT: 'uda_particle_simul'
+  ENTITY: 'particlesim'
+ENCODER_PATH: 'results/source/debug/encoder.pth'
+OUTPUT_DIR: 'results/target/debug'
+PROTOCOL: 'target'
+SEED: -1
